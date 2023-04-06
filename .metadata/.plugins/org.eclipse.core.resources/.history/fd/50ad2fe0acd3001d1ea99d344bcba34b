@@ -1,0 +1,60 @@
+#ifndef __MBOTLINUXUSART__
+#define __MBOTLINUXUSART__
+#include "main.h"
+
+#define START   0X11
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//从linux接收并解析数据到参数地址中
+extern int usartReceiveOneData(int *p_leftSpeedSet,int *p_rightSpeedSet,unsigned char *p_crtlFlag);
+//封装数据，调用USART1_Send_String将数据发送给linux
+extern void usartSendData(short leftVel, short rightVel,short angle,unsigned char ctrlFlag);
+//发送指定字符数组的函数
+void USART_Send_String(unsigned char *p,unsigned short sendSize);
+//计算八位循环冗余校验，得到校验值，一定程度上验证数据的正确性
+unsigned char getCrc8(unsigned char *ptr, unsigned short len);
+
+#endif
+#ifdef __cplusplus
+}
+#endif
+
+
+void usartSendData(short leftVel, short rightVel,short angle,unsigned char ctrlFlag)
+{
+	// 协议数据缓存数组
+	unsigned char buf[13] = {0};
+	int i, length = 0;
+
+	// 计算左右轮期望速度
+	leftVelNow.d  = leftVel;
+	rightVelNow.d = rightVel;
+	angleNow.d    = angle;
+
+	// 设置消息头
+	for(i = 0; i < 2; i++)
+		buf[i] = header[i];                      // buf[0] buf[1]
+
+	// 设置机器人左右轮速度、角度
+	length = 7;
+	buf[2] = length;                             // buf[2]
+	for(i = 0; i < 2; i++)
+	{
+		buf[i + 3] = leftVelNow.data[i];         // buf[3] buf[4]
+		buf[i + 5] = rightVelNow.data[i];        // buf[5] buf[6]
+		buf[i + 7] = angleNow.data[i];           // buf[7] buf[8]
+	}
+	// 预留控制指令
+	buf[3 + length - 1] = ctrlFlag;              // buf[9]
+
+	// 设置校验值、消息尾
+	buf[3 + length] = getCrc8(buf, 3 + length);  // buf[10]
+	buf[3 + length + 1] = ender[0];              // buf[11]
+	buf[3 + length + 2] = ender[1];              // buf[12]
+
+	//发送字符串数据
+	USART_Send_String(buf,sizeof(buf));
+}

@@ -1,0 +1,41 @@
+#ifndef __MBOTLINUXUSART__
+#define __MBOTLINUXUSART__
+#include "main.h"
+
+#define START   0X11
+/**************************************************************************
+通信的发送函数和接收函数必须的一些常量、变量、共用体对象
+**************************************************************************/
+
+//数据接收暂存区
+#define RX_LEN		16
+unsigned char  receiveBuff[RX_LEN] = {0};
+//通信协议常量
+const unsigned char header[2]  = {0x55, 0xaa};
+const unsigned char ender[2]   = {0x0d, 0x0a};
+
+//发送数据（左轮速、右轮速、角度）共用体（-32767 - +32768）
+union sendData
+{
+	short d;
+	unsigned char data[2];
+}leftVelNow,rightVelNow,angleNow;
+
+//左右轮速控制速度共用体
+union receiveData
+{
+	short d;
+	unsigned char data[2];
+}leftVelSet,rightVelSet;
+
+
+//从linux接收并解析数据到参数地址中
+extern int usartReceiveOneData(int *p_leftSpeedSet,int *p_rightSpeedSet,unsigned char *p_crtlFlag);
+//封装数据，调用USART1_Send_String将数据发送给linux
+extern void usartSendData(short leftVel, short rightVel,short angle,unsigned char ctrlFlag);
+//发送指定字符数组的函数
+void USART_Send_String(unsigned char *p,unsigned short sendSize);
+//计算八位循环冗余校验，得到校验值，一定程度上验证数据的正确性
+unsigned char getCrc8(unsigned char *ptr, unsigned short len);
+
+#endif
