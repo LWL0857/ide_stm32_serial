@@ -24,20 +24,20 @@ unsigned char  receiveBuff[RX_LEN] = {0};
 const unsigned char header[2]  = {0x55, 0xaa};
 const unsigned char ender[2]   = {0x0d, 0x0a};
 
-//发送数据（左轮速、右轮速、角度）共用体（-32767 - +32768）
-unsigned char buf[13] = {0};
+//发送数据（飞机目前的位姿给树莓派）共用体（-32767 - +32768）
+unsigned char buf[13] = {0};//待修改
 union sendData
 {
-	short d;
-	unsigned char data[2];
-}leftVelNow,rightVelNow,angleNow;
+	double d;
+	unsigned char data[8];
+}positionX_stm32,positionY_stm32,positionZ_stm32;
 
-//左右轮速控制速度共用体
+//从树莓派接收到的动捕发布的位姿 共用体
 union receiveData
 {
-	short d;
-	unsigned char data[2];
-}leftVelSet,rightVelSet;
+	double d;
+	unsigned char data[8];
+}positionX_rec_mocap,positionY_rec_mocap;
 
 
 /**************************************************************************
@@ -119,13 +119,13 @@ int usartReceiveOneData(int *p_leftSpeedSet,int *p_rightSpeedSet,unsigned char *
 					//进行速度赋值操作
 					 for(k = 0; k < 2; k++)
 					{
-						leftVelSet.data[k]  = receiveBuff[k + 3]; //buf[3]  buf[4]
-						rightVelSet.data[k] = receiveBuff[k + 5]; //buf[5]  buf[6]
+						positionX_rec_mocap.data[k]  = receiveBuff[k + 3]; //buf[3]  buf[4]
+						positionY_rec_mocap.data[k] = receiveBuff[k + 5]; //buf[5]  buf[6]
 					}
 
 					//速度赋值操作
-					*p_leftSpeedSet  = (int)leftVelSet.d;
-					*p_rightSpeedSet = (int)rightVelSet.d;
+					*p_leftSpeedSet  = (int)positionX_rec_mocap.d;
+					*p_rightSpeedSet = (int)positionY_rec_mocap.d;
 
 					//ctrlFlag
 					*p_crtlFlag = receiveBuff[7];                //buf[7]
@@ -160,9 +160,9 @@ void usartSendData(short leftVel, short rightVel,short angle,unsigned char ctrlF
 	int i, length = 0;
 
 	// 计算左右轮期望速度
-	leftVelNow.d  = leftVel;
-	rightVelNow.d = rightVel;
-	angleNow.d    = angle;
+	positionX_stm32.d  = leftVel;
+	positionY_stm32.d = rightVel;
+	positionZ_stm32.d    = angle;
 
 	// 设置消息头
 	for(i = 0; i < 2; i++)
@@ -173,9 +173,9 @@ void usartSendData(short leftVel, short rightVel,short angle,unsigned char ctrlF
 	buf[2] = length;                             // buf[2]
 	for(i = 0; i < 2; i++)
 	{
-		buf[i + 3] = leftVelNow.data[i];         // buf[3] buf[4]
-		buf[i + 5] = rightVelNow.data[i];        // buf[5] buf[6]
-		buf[i + 7] = angleNow.data[i];           // buf[7] buf[8]
+		buf[i + 3] = positionX_stm32.data[i];         // buf[3] buf[4]
+		buf[i + 5] = positionY_stm32.data[i];        // buf[5] buf[6]
+		buf[i + 7] = positionZ_stm32.data[i];           // buf[7] buf[8]
 	}
 	// 预留控制指令
 	buf[3 + length - 1] = ctrlFlag;              // buf[9]
