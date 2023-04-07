@@ -25,27 +25,33 @@ const unsigned char header[2]  = {0x55, 0xaa};
 const unsigned char ender[2]   = {0x0d, 0x0a};
 
 //发送数据（飞机目前的位姿给树莓派）共用体（-32767 - +32768）
-unsigned char buf[13] = {0};//待修改
+unsigned char buf[62] = {0};//待修改
 union sendData
 {
 	double d;
 	unsigned char data[8];
-}positionX_stm32,positionY_stm32,positionZ_stm32;
+}positionX_stm32,positionY_stm32,positionZ_stm32,
+orientationW_stm32,orientationX_stm32,
+orientationY_stm32,orientationZ_stm32;
 
 //从树莓派接收到的动捕发布的位姿 共用体
 union receiveData
 {
 	double d;
 	unsigned char data[8];
-}positionX_rec_mocap,positionY_rec_mocap;
+}positionX_rec_mocap,positionY_rec_mocap,positionZ_rec_mocap,
+orientationX_rec_mocap,orientationY_rec_mocap,
+orientationZ_rec_mocap,orientationW_rec_mocap;
 
 
 /**************************************************************************
-函数功能：通过串口中断服务函数，获取上位机发送的左右轮控制速度、预留控制标志位，分别存入参数中
-入口参数：左轮轮速控制地址、右轮轮速控制地址、预留控制标志位
+函数功能：通过串口中断服务函数，获取上位机发送的mocap中无人机的位姿，分别存入参数中
+入口参数：pose from mocap
 返回  值：无特殊意义
 **************************************************************************/
-int usartReceiveOneData(int *p_leftSpeedSet,int *p_rightSpeedSet,unsigned char *p_crtlFlag)
+int usartReceiveOneData(int *p_positionX_rec_mocap, int *p_positionY_rec_mocap, int *p_positionZ_rec_mocap,
+						int *p_orientationX_rec_mocap, int *p_orientationY_rec_mocap,
+						int *p_orientationZ_rec_mocap, int *p_orientationW_rec_mocap)
 {
 	unsigned char USART_Receiver              = 0;          //接收数据
 	static unsigned char checkSum             = 0;
@@ -80,7 +86,7 @@ int usartReceiveOneData(int *p_leftSpeedSet,int *p_rightSpeedSet,unsigned char *
     {
 		switch(USARTBufferIndex)
 		{
-			case 0://接收左右轮速度数据的长度
+			case 0://接收动捕发送的位姿数据的长度
 				receiveBuff[2] = USART_Receiver;
 				dataLength     = receiveBuff[2];            //buf[2]
 				USARTBufferIndex++;
@@ -109,26 +115,40 @@ int usartReceiveOneData(int *p_leftSpeedSet,int *p_rightSpeedSet,unsigned char *
 			case 3://接收信息尾
 				if(k==0)
 				{
-					//数据0d     buf[9]  无需判断
+					//数据0d     buf[60]  无需判断
 					k++;
 				}
 				else if (k==1)
 				{
-					//数据0a     buf[10] 无需判断
-
-					//进行速度赋值操作
-					 for(k = 0; k < 2; k++)
+					//数据0a     buf[61] 无需判断
+					memcpy(&positionX_rec_mocap.data, &receiveBuff[3], 8);
+					memcpy(&positionY_rec_mocap.data, &receiveBuff[11], 8);
+					memcpy(&positionZ_rec_mocap.data, &receiveBuff[19], 8);
+					memcpy(&orientationX_rec_mocap.data, &receiveBuff[27], 8);
+					memcpy(&orientationY_rec_mocap.data, &receiveBuff[35], 8);
+					memcpy(&orientationZ_rec_mocap.data, &receiveBuff[43], 8);
+					memcpy(&orientationW_rec_mocap.data, &receiveBuff[51], 8);
+					/*//进行速度赋值操作
+					 for(k = 0; k < 7; k++)
 					{
 						positionX_rec_mocap.data[k]  = receiveBuff[k + 3]; //buf[3]  buf[4]
-						positionY_rec_mocap.data[k] = receiveBuff[k + 5]; //buf[5]  buf[6]
-					}
+						positionY_rec_mocap.data[k] = receiveBuff[k + 11]; //buf[5]  buf[6]
+						positionZ_rec_mocap.data[k] = receiveBuff[k + 19];
+						orientationX_rec_mocap.data[k] = receiveBuff[k + 11];
+						orientationY_rec_mocap.data[k] = receiveBuff[k + 11];
+						orientationZ_rec_mocap.data[k] = receiveBuff[k + 11];
+						orientationW_rec_mocap.data[k] = receiveBuff[k + 11];
 
-					//速度赋值操作
-					*p_leftSpeedSet  = (int)positionX_rec_mocap.d;
-					*p_rightSpeedSet = (int)positionY_rec_mocap.d;
+					}*/
 
-					//ctrlFlag
-					*p_crtlFlag = receiveBuff[7];                //buf[7]
+					//位姿赋值操作
+					*p_positionX_rec_mocap = (int)positionX_rec_mocap.d;
+					*p_positionY_rec_mocap = (int)positionY_rec_mocap.d;
+					*p_positionZ_rec_mocap = (int)positionZ_rec_mocap.d;
+					*p_orientationX_rec_mocap = (int)orientationX_rec_mocap.d;
+					*p_orientationY_rec_mocap = (int)orientationY_rec_mocap.d;
+					*p_orientationZ_rec_mocap = (int)orientationZ_rec_mocap.d;
+					*p_orientationW_rec_mocap = (int)orientationW_rec_mocap.d;
 
 					//-----------------------------------------------------------------
 					//完成一个数据包的接收，相关变量清零，等待下一字节数据
@@ -148,37 +168,49 @@ int usartReceiveOneData(int *p_leftSpeedSet,int *p_rightSpeedSet,unsigned char *
 	return 0;
 }
 /**************************************************************************
-函数功能：将左右轮速和角度数据、控制信号进行打包，通过串口发送给Linux
-入口参数：实时左轮轮速、实时右轮轮速、实时角度、控制信号（如果没有角度也可以不发）
+函数功能：将无人机的位姿进行打包，通过串口发送给Linux
+入口参数：实时位姿
 返回  值：无
 5000 2000 1000 0x05
 **************************************************************************/
-void usartSendData(short leftVel, short rightVel,short angle,unsigned char ctrlFlag)
+void usartSendData(double positionX, double positionY,double positionZ,
+double orientationZ,double orientationX,
+double orientationW,double orientationY)
 {
 	// 协议数据缓存数组
 
 	int i, length = 0;
 
-	// 计算左右轮期望速度
-	positionX_stm32.d  = leftVel;
-	positionY_stm32.d = rightVel;
-	positionZ_stm32.d    = angle;
+	// 计算位姿
+	positionX_stm32.d = positionX;
+	positionY_stm32.d = positionY;
+	positionZ_stm32.d = positionZ;
+	orientationX_stm32.d = orientationX;
+	orientationY_stm32.d = orientationY;
+	orientationZ_stm32.d = orientationZ;
+	orientationW_stm32.d = orientationW;
 
 	// 设置消息头
 	for(i = 0; i < 2; i++)
 		buf[i] = header[i];                      // buf[0] buf[1]
 
 	// 设置机器人左右轮速度、角度
-	length = 7;
+	length =56 ;
 	buf[2] = length;                             // buf[2]
-	for(i = 0; i < 2; i++)
+	 memcpy(&buf[3], &positionX_stm32.data, 8);
+    memcpy(&buf[11], &positionY_stm32.data, 8);
+    memcpy(&buf[19], &positionZ_stm32.data, 8);
+    memcpy(&buf[27], &orientationX_stm32.data, 8);
+    memcpy(&buf[35], &orientationY_stm32.data, 8);
+    memcpy(&buf[43], &orientationZ_stm32.data, 8);
+    memcpy(&buf[51], &orientationW_stm32.data, 8);
+	/*for(i = 0; i < 2; i++)
 	{
 		buf[i + 3] = positionX_stm32.data[i];         // buf[3] buf[4]
 		buf[i + 5] = positionY_stm32.data[i];        // buf[5] buf[6]
 		buf[i + 7] = positionZ_stm32.data[i];           // buf[7] buf[8]
-	}
-	// 预留控制指令
-	buf[3 + length - 1] = ctrlFlag;              // buf[9]
+	}*/
+	
 
 	// 设置校验值、消息尾
 	buf[3 + length] = getCrc8(buf, 3 + length);  // buf[10]
