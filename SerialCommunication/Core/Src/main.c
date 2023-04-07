@@ -47,11 +47,16 @@
 /* USER CODE BEGIN PV */
 //测试发�?�变�??
 // send the uav's position and orierntation to linux
-double positionX_uav, positionY_uav, positionZ_uav;
-double orientationX_uav, orientationY_uav, orientationZ_uav, orientationW_uav;
-positionX_uav = 0.4222; positionY_uav = 0.4222; positionZ_uav = 0.4222;
-orientationX_uav =  0.4222;orientationY_uav = 0.4222; orientationZ_uav = 0.4222;
- orientationW_uav = 0.5555;
+/*double positionX_uav, positionY_uav, positionZ_uav;
+double orientationX_uav, orientationY_uav, orientationZ_uav, orientationW_uav;*/
+
+double positionX_uav = 0.4222; 
+double positionY_uav = 0.4222; 
+double positionZ_uav = 0.4222;
+double orientationX_uav =  0.4222;
+double orientationY_uav = 0.4222; 
+double orientationZ_uav = 0.4222;
+double orientationW_uav = 0.5555;
 
 /*short testSend1   =5000;
 short testSend2   =2000;
