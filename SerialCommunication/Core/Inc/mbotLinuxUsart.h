@@ -2,6 +2,7 @@
 #define __MBOTLINUXUSART__
 #include "main.h"
 
+#include<string.h>
 
 #define START   0X11
 

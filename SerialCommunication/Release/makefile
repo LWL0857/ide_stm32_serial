@@ -54,8 +54,8 @@ all: main-build
 main-build: SerialCommunication.elf secondary-outputs
 
 # Tool invocations
-SerialCommunication.elf: $(OBJS) $(USER_OBJS) E:\STM32CubeMXIDE_workspaces\STM32CubeMXIDE_stm32_ros\SerialCommunication\STM32F767VITX_FLASH.ld
-	arm-none-eabi-gcc -o "SerialCommunication.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"E:\STM32CubeMXIDE_workspaces\STM32CubeMXIDE_stm32_ros\SerialCommunication\STM32F767VITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SerialCommunication.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+SerialCommunication.elf: $(OBJS) $(USER_OBJS) D:\WorkSpace\vscode_workspace\my_serial\IDE_stm32_ros\SerialCommunication\STM32F767VITX_FLASH.ld
+	arm-none-eabi-gcc -o "SerialCommunication.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"D:\WorkSpace\vscode_workspace\my_serial\IDE_stm32_ros\SerialCommunication\STM32F767VITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SerialCommunication.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

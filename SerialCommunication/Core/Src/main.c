@@ -46,15 +46,27 @@
 
 /* USER CODE BEGIN PV */
 //测试发�?�变�??
-short testSend1   =5000;
+// send the uav's position and orierntation to linux
+double positionX_uav, positionY_uav, positionZ_uav;
+double orientationX_uav, orientationY_uav, orientationZ_uav, orientationW_uav;
+positionX_uav = 0.4222; positionY_uav = 0.4222; positionZ_uav = 0.4222;
+orientationX_uav =  0.4222;orientationY_uav = 0.4222; orientationZ_uav = 0.4222;
+ orientationW_uav = 0.5555;
+
+/*short testSend1   =5000;
 short testSend2   =2000;
 short testSend3   =1000;
 unsigned char testSend4 = 0x05;
-
+*/
+// receive mocap value,and reserve pose and orientaion in position and orierntation
+int positionX_mocap, positionY_mocap, positionZ_nocap;
+int orientationX_mocap, orientationY_mocap, orientationZ_mocap, orientationW_mocap;
 //测试接收变量
+/*
 int testRece1     =0;
 int testRece2     =0;
 unsigned char testRece3 = 0x00;
+*/
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,7 +120,8 @@ int main(void)
   {
     /* USER CODE END WHILE */
 		//将需要发送到ROS的数据，从该函数发出，前三个数据范围（-32768 - +32767），第四个数据的范围(0 - 255)
-		usartSendData(testSend1,testSend2,testSend3,testSend4);
+		usartSendData( positionX_uav, positionY_uav, positionZ_uav,
+    orientationX_uav, orientationY_uav, orientationZ_uav, orientationW_uav);
 		//必须的延时
 		HAL_Delay(13);
     /* USER CODE BEGIN 3 */
@@ -207,7 +220,8 @@ void USART1_IRQHandler(void)
 	if(LL_USART_IsActiveFlag_IDLE(USART1))
 	{
 		LL_USART_ClearFlag_IDLE(USART1);
-		usartReceiveOneData(&testRece1,&testRece2,&testRece3);
+		usartReceiveOneData(&positionX_mocap, &positionY_mocap, &positionZ_nocap,    
+                &orientationX_mocap, &orientationY_mocap, &orientationZ_mocap, &orientationW_mocap);
 //		LL_DMA_DisableStream(DMA2,LL_DMA_STREAM_5);
 //		LL_DMA_ClearFlag_DME5(DMA2);
 //		LL_DMA_ClearFlag_HT5(DMA2);
